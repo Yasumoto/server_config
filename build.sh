@@ -21,4 +21,4 @@ else
   exit 1
 fi
 
-exec "${PEX}" flask -o server.pex
+DISTUTILS_DEBUG=1 PEX_VERBOSE=1 ${PEX} . -c server-config -o server_config.pex
