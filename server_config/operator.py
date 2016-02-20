@@ -30,9 +30,23 @@ class Operator(object):
   upgrade', etc.
   """
   __metaclass__ = abc.ABCMeta
+  
+  @abc.abstractmethod
+  def preflight_check(self):
+    """An opportunity to ensure either the environment, configuration, or other setup is ready."""
+    pass
     
   @abc.abstractmethod
-  def list(hostname):
+  def hostlist(self):
+    """Open a file with the given Operator name and return it for reading.
+    
+    This is kept abstract as certain environments may aim to keep host lists in a single source of
+    truth, such as svn, a remote webserver, or a mounted NFS share.
+    """
+    pass
+    
+  @abc.abstractmethod
+  def list(self, hostname):
     """Connect and determine the state of a server by returning installed configuration version
     
     Note that failures can throw subclasses of the Error class in this module.
@@ -44,7 +58,7 @@ class Operator(object):
     pass
 
   @abc.abstractmethod
-  def deploy(hostname, version):
+  def deploy(self, hostname, version):
     """Connect to a host and apply the specified version of configuration to it.
     
     Note that failures can throw subclasses of the Error class in this module.

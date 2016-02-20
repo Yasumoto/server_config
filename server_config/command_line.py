@@ -26,6 +26,8 @@
 # unzip it into /var/www/html
 # urllib.urlopen(), ensure Hello, World! (make a comment that it can change)
 
+from server_config.dispatch import Dispatcher
+
 import click
 
 @click.command()
@@ -33,4 +35,24 @@ import click
 @click.option('--action', default='list', help='Action to perform, currently `list` or `deploy`')
 def main(role, action):
   """Tool used to perform actions upon hosts in production."""
+  try:
+    operator = Dispatcher().dispatch[role]
+  except KeyError:
+    print('Error! Could not find an operator defined for %s!' % role)
+    print('Options are %s' % ','.join(Dispatcher().dispatch.keys()))
+    return -1
   
+  operator.preflight_check()
+  
+  successful_hosts = []
+  failed_hosts = []
+  
+  if action == 'deploy':  
+    for hostname in operator.hostnames():
+      operator.deploy()
+  elif action == 'list':
+    for hostname in operator.hostnames():
+      operator.list()
+  else:
+    print('Error! Did not recognize your target action of %s' % action)
+    print('Valid actions are list or deploy')
