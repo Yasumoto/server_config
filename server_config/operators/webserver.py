@@ -25,12 +25,27 @@
 from contextlib import contextmanager
 import os
 
+from server_config.executors.webserver import WebserverExecutor
 from server_config.operator import Operator
 
 class WebserverOperator(Operator):
+  """Overall manager to maintain consistency between Webserver hosts"""
+
+  PACKAGE_LIST = {
+    'apache2': ['rm /var/www/html/index.html'],
+    'php5': [],
+    'libapche2-mod-php5': ['/etc/init.d/apache2 restart'],
+  }
+
   @property
   def name(self):
     return 'webserver'
+
+  @property
+  def executor(self):
+    if self._executor is None:
+      self._executor = WebserverExecutor()
+    return self._executor
 
   @contextmanager
   def hostlist(self):
@@ -38,10 +53,16 @@ class WebserverOperator(Operator):
       yield hostlist.read().strip().split('\n')
 
   def preflight_check(self):
-    pass
+    for hostname in self.hostlist():
+      self.executor.create_staging_directory(hostname,
+          os.path.join(super.STAGING_DIRECTORY, self.name))
+      self.executor.install_packages(hostname, self.PACKAGE_LIST)
 
   def status(self, hostname):
-    pass
+    application_versions = {}
+    for hostname in self.hostlist():
+      application_versions[hostname] = self.executor.application_version(hostname)
+    return application_versions
 
   def deploy(self, hostname, version):
     pass

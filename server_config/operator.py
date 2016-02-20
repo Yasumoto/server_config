@@ -31,9 +31,22 @@ class Operator(object):
   """
   __metaclass__ = abc.ABCMeta
 
+  STAGING_DIRECTORY = '/usr/local/server_config'
+
   @abc.abstractproperty
   def name(self):
-    """The name of this operator, the same as the role of hosts."""
+    """The name of this operator, the same as the role of hosts.
+
+    :rtype: str
+    """
+    pass
+
+  @abc.abstractproperty
+  def executor(self):
+    """"Execution engine that will provide methods to connect to hosts and perform remote actions.
+
+    :rtype: server_config.executor.Executor
+    """
     pass
 
   @abc.abstractmethod
@@ -45,13 +58,12 @@ class Operator(object):
       @contextmanager
       def hostlist(self):
         with open(os.path.join(os.getcwd(), '%s.txt' % self.name), 'r') as hostlist:
-          yield hostlist
+          yield hostlist.read().strip().split('\n')
 
     And callers can use it as:
 
-      with operator.hostlist() as fp:
-        for hostname in fp:
-          print(hostname)
+      for hostname in self.hostlist():
+        print(hostname)
 
 
     This is kept abstract as certain environments may aim to keep host lists in a single source of

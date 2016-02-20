@@ -17,3 +17,6 @@
 # Binary tools
 server_config.pex
 check.pex
+
+# Environment specific lists
+webserver.txt
