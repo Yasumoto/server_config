@@ -22,14 +22,22 @@
 # unzip it into /var/www/html
 # urllib.urlopen(), ensure Hello, World! (make a comment that it can change)
 
+from contextlib import contextmanager
+import os
 
 from server_config.operator import Operator
 
 class WebserverOperator(Operator):
-  def preflight_check(self):
-    pass
+  @property
+  def name(self):
+    return 'webserver'
 
+  @contextmanager
   def hostlist(self):
+    with open(os.path.join(os.getcwd(), '%s.txt' % self.name), 'r') as hostlist:
+      yield hostlist.read().strip().split('\n')
+
+  def preflight_check(self):
     pass
 
   def status(self, hostname):

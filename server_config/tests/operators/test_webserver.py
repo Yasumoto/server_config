@@ -13,5 +13,25 @@
 
 import unittest
 
+from server_config.operators.webserver import WebserverOperator
+
+import mock
+
+
+FAKE_HOSTLIST = '''hostA
+hostB
+hostC
+'''
+
 class TestWebserverOperator(unittest.TestCase):
-  pass
+  def setUp(self):
+    self.operator = WebserverOperator()
+
+  def test_name(self):
+    assert self.operator.name is not None
+
+  @mock.patch('server_config.operators.webserver.open',
+      mock.mock_open(read_data=FAKE_HOSTLIST), create=True)
+  def test_hostlist(self):
+    with self.operator.hostlist() as hostlist:
+      assert len(hostlist) == 3

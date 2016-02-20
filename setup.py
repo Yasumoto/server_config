@@ -50,6 +50,9 @@ setup(name='server_config',
         'click==6.2',
       ],
       test_suite='nose.collector',
-      tests_require=['nose==1.3.7'],
+      tests_require=[
+        'mock==1.3.0',
+        'nose==1.3.7'
+      ],
       include_package_data=True,
       zip_safe=True)

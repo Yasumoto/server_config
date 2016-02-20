@@ -14,5 +14,6 @@
 /*.egg-info
 /.eggs
 
-# Binary tool
+# Binary tools
 server_config.pex
+check.pex
