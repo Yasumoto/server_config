@@ -46,7 +46,7 @@ class Operator(object):
     pass
     
   @abc.abstractmethod
-  def list(self, hostname):
+  def status(self, hostname):
     """Connect and determine the state of a server by returning installed configuration version
     
     Note that failures can throw subclasses of the Error class in this module.

@@ -32,7 +32,7 @@ class WebserverOperator(Operator):
   def hostlist(self):
     pass
 
-  def list(self, hostname):
+  def status(self, hostname):
     pass
 
   def deploy(self, hostname, version):
