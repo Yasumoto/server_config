@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,15 +13,9 @@
 # limitations under the License.
 #
 
-class WebserverExecutor(object):
-  def __init__(self):
-    pass
+# Bare minimum syntax checking
+from server_config.command_line import main # noqa
 
-  def create_staging_directory(self, hostname, path):
-    pass
 
-  def install_packages(self, hostname, packages):
-    pass
-
-  def application_version(self, hostname):
-    pass
+def test_command_line_import():
+  pass

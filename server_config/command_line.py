@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -26,20 +24,22 @@ def main(role, action):
     operator = Dispatcher().dispatch[role]
   except KeyError:
     print('Error! Could not find an operator defined for %s!' % role)
-    print('Options are %s' % ','.join(Dispatcher().dispatch.keys()))
+    print('You need a --role=<service_name>')
+    print('Options are: %s' % ','.join(Dispatcher().dispatch.keys()))
     return -1
-  
+
   operator.preflight_check()
-  
+
   successful_hosts = []
   failed_hosts = []
-  
-  if action == 'deploy':  
-    for hostname in operator.hostnames():
-      operator.deploy()
+
+  if action == 'deploy':
+    operator.deploy()
   elif action == 'status':
-    for hostname in operator.hostnames():
-      operator.status()
+    host_status = operator.status()
+    print('Found these versions installed:')
+    for hostname, version in host_status.items():
+      print('%s: %s' % (hostname, version))
   else:
     print('Error! Did not recognize your target action of %s' % action)
-    print('Valid actions are status or deploy')
+    print('Valid actions are: status or deploy')

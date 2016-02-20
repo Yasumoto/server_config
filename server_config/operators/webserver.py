@@ -37,6 +37,10 @@ class WebserverOperator(Operator):
     'libapche2-mod-php5': ['/etc/init.d/apache2 restart'],
   }
 
+  def __init__(self):
+    self._executor = None
+    self.staging_dir = os.path.join(self.STAGING_DIRECTORY, self.name)
+
   @property
   def name(self):
     return 'webserver'
@@ -53,15 +57,16 @@ class WebserverOperator(Operator):
       yield hostlist.read().strip().split('\n')
 
   def preflight_check(self):
-    for hostname in self.hostlist():
-      self.executor.create_staging_directory(hostname,
-          os.path.join(super.STAGING_DIRECTORY, self.name))
-      self.executor.install_packages(hostname, self.PACKAGE_LIST)
+    with self.hostlist() as hostnames:
+      for hostname in hostnames:
+        self.executor.create_staging_directory(hostname, self.staging_dir)
+        self.executor.install_packages(hostname, self.PACKAGE_LIST)
 
-  def status(self, hostname):
+  def status(self):
     application_versions = {}
-    for hostname in self.hostlist():
-      application_versions[hostname] = self.executor.application_version(hostname)
+    with self.hostlist() as hostnames:
+      for hostname in hostnames:
+        application_versions[hostname] = self.executor.application_version(hostname)
     return application_versions
 
   def deploy(self, hostname, version):

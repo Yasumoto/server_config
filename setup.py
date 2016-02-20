@@ -42,7 +42,7 @@ setup(name='server_config',
       author='Joe Smith',
       author_email='yasumoto7@gmail.com',
       license='Apache',
-      packages=['server_config'],
+      packages=['server_config', 'server_config.executors', 'server_config.operators'],
       entry_points={
         'console_scripts': ['server-config=server_config.command_line:main'],
       },
