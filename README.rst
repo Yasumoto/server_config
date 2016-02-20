@@ -10,7 +10,8 @@ application to a list of hosts and ensure compliance.
 Web Source
 ----------
 
-The application is contained within the ``hello_world`` directory, and the contents are zipped and deployed onto each host.
+The application is contained within the ``hello_world`` directory, and the contents are zipped and
+deployed onto each host.
 
 Deploy - Server Config
 ----------------------
@@ -23,4 +24,5 @@ operate on each of the hosts in turn, ensuring compliance with the requisite pat
 Hello World Configuration
 -------------------------
 
-The Hello World application currently depends on the Apache Web Server as well as mod_php to run its application code. The configuration for Apache lies within the hello_world module.
+The Hello World application currently depends on the Apache Web Server as well as mod_php to run its
+application code. The configuration for Apache lies within the hello_world module.

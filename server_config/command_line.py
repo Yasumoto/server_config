@@ -16,5 +16,4 @@
 import click
 
 def main():
-  print('wut')
-  print('how is this happening')
+  print('Testing')

@@ -32,7 +32,7 @@ setup(name='server_config',
       license='Apache',
       packages=['server_config'],
       entry_points={
-        'console_scripts': ['jimmeh=server_config.command_line:main'],
+        'console_scripts': ['server-config=server_config.command_line:main'],
       },
       install_requires=[
         'click==6.2',
