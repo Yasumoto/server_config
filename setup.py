@@ -12,7 +12,7 @@ def readme():
 
 
 setup(name='server_config',
-      version=0.0.1,
+      version='0.0.1',
       description='A Simple Configuration Tool for Servers',
       long_description=readme(),
       classifiers=[
@@ -30,6 +30,14 @@ setup(name='server_config',
       author='Joe Smith',
       author_email='yasumoto7@gmail.com',
       license='Apache',
-      scripts=['bin/server_config'],
+      packages=['server_config'],
+      entry_points={
+        'console_scripts': ['jimmeh=server_config.command_line:main'],
+      },
+      install_requires=[
+        'click==6.2',
+      ],
+      test_suite='nose.collector',
+      tests_require=['nose==1.3.7'],
       include_package_data=True,
       zip_safe=True)

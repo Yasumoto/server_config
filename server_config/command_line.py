@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # check argument
 # do we have a hostlist with that name
 # if so, delegate to that command
@@ -10,3 +12,9 @@
 # scp over the new zip file to a staging directory that you create
 # unzip it into /var/www/html
 # urllib.urlopen(), ensure Hello, World! (make a comment that it can change)
+
+import click
+
+def main():
+  print('wut')
+  print('how is this happening')
