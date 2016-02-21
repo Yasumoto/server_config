@@ -42,6 +42,8 @@ class WebserverExecutor(object):
     return self._password
 
   def remote_command(self, hostname, command_list):
+    #TODO(Yasumoto): Since there are many calls to the same host, consider memoizing the connection and
+    # re-using on subsequent executions
     shell = spur.SshShell(hostname=hostname, username=self.username, password=self.password,
         missing_host_key=spur.ssh.MissingHostKey.warn)
     result = None

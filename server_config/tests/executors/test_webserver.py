@@ -17,6 +17,7 @@ from server_config.executors.webserver import WebserverExecutor
 
 import mock
 from nose.tools import assert_equals
+from spur.results import ExecutionResult
 
 
 HOSTNAME = 'hostA'
@@ -26,13 +27,29 @@ class TestWebserverExecutor(unittest.TestCase):
   def setUp(self):
     self.executor = WebserverExecutor()
 
-  @mock.patch('subprocess.Popen', autospec=True, spec_set=True)
-  def test_remote_command(self, MockPopen):
-    return True
-    MockPopen.return_value.communicate.return_value = 'success', ''
+  @mock.patch('spur.SshShell.run', autospec=True, spec_set=True)
+  def test_remote_command(self, mock_run):
+    mock_run.return_value = ExecutionResult(0, 'stdout', 'stderr')
+    assert_equals(self.executor.remote_command(HOSTNAME, ['test']), 'stdout')
 
-    assert_equals(self.executor.remote_command(HOSTNAME, ['test']), ('success', ''))
+  @mock.patch('spur.SshShell.run', autospec=True, spec_set=True)
+  def test_remote_command_failed_command(self, mock_run):
+    mock_run.return_value = ExecutionResult(1, 'stdout', 'stderr')
+    with self.assertRaises(self.executor.RemoteExecutionError):
+      self.executor.remote_command(HOSTNAME, ['test'])
 
-    assert_equals(MockPopen.mock_calls,
-        [mock.call([self.executor.ssh_path, HOSTNAME, 'test'], stderr=-1, stdout=-1),
-        mock.call().communicate()])
+  @mock.patch('server_config.executors.webserver.WebserverExecutor.remote_command', autospec=True,
+      spec_set=True)
+  def test_create_directory(self, mock_remote_command):
+    mock_remote_command.return_value = 'test_output'
+    assert_equals(self.executor.create_directory(HOSTNAME, 'path'), 'test_output')
+    assert_equals(mock_remote_command.mock_calls,
+        [mock.call(self.executor, HOSTNAME, ['mkdir', '-p', 'path'])])
+
+  @mock.patch('server_config.executors.webserver.WebserverExecutor.remote_command', autospec=True,
+      spec_set=True)
+  def test_update_packages(self, mock_remote_command):
+    mock_remote_command.return_value = 'test_output'
+    assert_equals(self.executor.update_packages(HOSTNAME), 'test_output')
+    assert_equals(mock_remote_command.mock_calls,
+        [mock.call(self.executor, HOSTNAME, ['apt-get', 'update'])])
