@@ -22,14 +22,15 @@ places them into a 'role' determined by the file name. The tool, when called wit
 argument, will check its commands for a matching set of configuration steps to perform, then
 operate on each of the hosts in turn, ensuring compliance with the requisite pattern.
 
-The tool is built with ``build.sh`` and can be run with an invocation along the lines of:
-    ``./server_config.pex --role=webserver --action=deploy``
+The tool is built with ``build.sh`` and can be run with an invocation along the lines of
+
+``./server_config.pex --role=webserver --action=deploy``
 
 There will need to be three files for that to work
 
-    webserver.txt: A list of hosts in the webserver role
-    username: The username to connect to each host as
-    password: The password to use to authenticate to each host
+- ``webserver.txt``: A list of hosts in the webserver role
+- ``username``: The username to connect to each host as
+- ``password``: The password to use to authenticate to each host
 
 The entry point for the tool is ``command_line.py``, which uses a ``Dispatcher`` to identify how to
 proceed. There are two main pieces which drive the configuration tool, Operators and Executors.
