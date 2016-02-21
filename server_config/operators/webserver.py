@@ -92,10 +92,9 @@ class WebserverOperator(Operator):
 
   def deploy(self):
     local_path, artifact_version = self.build_artifact()
-    print("Path: %s" % local_path)
-    print('Version: %s' % artifact_version)
-    return True
+
     with self.hostlist() as hostnames:
       for hostname in hostnames:
-        self.executor.stage_artifact(local_path, self.staging_dir)
-        self.executor.set_correct_version()
+        self.executor.stage_artifact(hostname, local_path, artifact_version, self.staging_dir)
+        
+        #self.executor.set_correct_version(hostname, artifact_version)

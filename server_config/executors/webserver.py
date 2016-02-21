@@ -12,6 +12,7 @@
 #
 
 import os
+import shutil
 
 import spur
 
@@ -78,6 +79,17 @@ class WebserverExecutor(object):
         print('Modifying %s with: %s' % (hostname, post_install_command))
         output = self.remote_command(hostname, post_install_command)
         print('Output: %s' % output)
+
+  def stage_artifact(hostname, local_path, artifact_version, staging_dir):
+    connection = spur.SshShell(hostname=hostname, username=self.username, password=self.password,
+        missing_host_key=spur.ssh.MissingHostKey.warn)
+    remote_artifact = os.path.join(staging_dir, local_path)
+    with connection.open(remote_artifact, 'wb') as remote_file:
+      with open(local_path, 'rb') as local_file:
+        shutil.copyfileobj(local_file, remote_file)
+    self.remote_command(hostname, ['unzip', '-d', os.path.join(staging_dir, artifact_version), remote_artifact])
+    #self.remote_command(hostname, ['rm', remote_artifact])
+
 
   def application_version(self, hostname):
     return self.remote_command(hostname, ['uname', '-a'])
