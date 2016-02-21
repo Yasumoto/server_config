@@ -15,5 +15,35 @@ import unittest
 
 from server_config.executors.webserver import WebserverExecutor
 
+import mock
+from nose.tools import assert_equals
+
+
+HOSTNAME = 'hostA'
+
+
 class TestWebserverExecutor(unittest.TestCase):
-  pass
+  def setUp(self):
+    self.executor = WebserverExecutor()
+
+  @mock.patch('subprocess.Popen', autospec=True, spec_set=True)
+  def test_remote_command(self, MockPopen):
+    return True
+    MockPopen.return_value.communicate.return_value = 'success', ''
+
+    assert_equals(self.executor.remote_command(HOSTNAME, ['test']), ('success', ''))
+
+    assert_equals(MockPopen.mock_calls,
+        [mock.call([self.executor.ssh_path, HOSTNAME, 'test'], stderr=-1, stdout=-1),
+        mock.call().communicate()])
+
+  @mock.patch('subprocess.Popen', autospec=True, spec_set=True)
+  def test_remote_command_failure(self, MockPopen):
+    return True
+    MockPopen.side_effect = ValueError
+
+    with self.assertRaises(self.executor.CommandError):
+      self.executor.remote_command(HOSTNAME, ['test'])
+
+    assert_equals(MockPopen.mock_calls,
+        [mock.call([self.executor.ssh_path, HOSTNAME, 'test'], stderr=-1, stdout=-1)])

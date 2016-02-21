@@ -47,7 +47,9 @@ setup(name='server_config',
         'console_scripts': ['server-config=server_config.command_line:main'],
       },
       install_requires=[
+        'arrow==0.7.0',
         'click==6.2',
+        'spur==0.3.15',
       ],
       test_suite='nose.collector',
       tests_require=[

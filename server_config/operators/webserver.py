@@ -24,18 +24,23 @@
 
 from contextlib import contextmanager
 import os
+import subprocess
 
 from server_config.executors.webserver import WebserverExecutor
 from server_config.operator import Operator
 
+import arrow
+
 class WebserverOperator(Operator):
   """Overall manager to maintain consistency between Webserver hosts"""
 
-  PACKAGE_LIST = {
-    'apache2': ['rm /var/www/html/index.html'],
-    'php5': [],
-    'libapche2-mod-php5': ['/etc/init.d/apache2 restart'],
-  }
+  PACKAGE_LIST = (
+    ('apache2=2.4.7-1ubuntu4.9', ['rm', '-f', '/var/www/html/index.html']),
+    ('php5=5.5.9+dfsg-1ubuntu4.14', None),
+    ('libapache2-mod-php5=5.5.9+dfsg-1ubuntu4.14', ['/etc/init.d/apache2', 'restart']),
+  )
+
+  SYMLINK_LOCATION = '/var/www/html'
 
   def __init__(self):
     self._executor = None
@@ -66,8 +71,31 @@ class WebserverOperator(Operator):
     application_versions = {}
     with self.hostlist() as hostnames:
       for hostname in hostnames:
-        application_versions[hostname] = self.executor.application_version(hostname)
+        try:
+          application_versions[hostname] = self.executor.application_version(hostname)
+        except WebserverExecutor.RemoteExecutionError as e:
+          print('Error connecting to %s: %s' % (hostname, e))
+        print('%s had %s' % (hostname, application_versions[hostname]))
     return application_versions
 
-  def deploy(self, hostname, version):
-    pass
+  def build_artifact(self):
+    """Simple build process for hello_world.
+
+    Future improvements would likely benefit from more process- likely splitting the larger codebase
+    into a separate repository, running tests ahead of time, and committing a built artifact to
+    something like artifactory.
+    """
+    artifact_version = arrow.utcnow().timestamp
+    local_path = 'hello_world_%s.zip' % artifact_version
+    subprocess.check_call(['/usr/bin/zip', '-r', local_path, 'hello_world'])
+    return local_path, artifact_version
+
+  def deploy(self):
+    local_path, artifact_version = self.build_artifact()
+    print("Path: %s" % local_path)
+    print('Version: %s' % artifact_version)
+    return True
+    with self.hostlist() as hostnames:
+      for hostname in hostnames:
+        self.executor.stage_artifact(local_path, self.staging_dir)
+        self.executor.set_correct_version()

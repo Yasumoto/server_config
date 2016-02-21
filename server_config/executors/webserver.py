@@ -11,15 +11,73 @@
 # limitations under the License.
 #
 
+import os
+
+import spur
+
 class WebserverExecutor(object):
+
+  class Error(Exception): pass
+  class RemoteExecutionError(Error): pass
+
   def __init__(self):
-    pass
+    self._username = None
+    self._password = None
+    self.username_path = os.path.join(os.getcwd(), "username")
+    self.password_path = os.path.join(os.getcwd(), "password")
+
+  @property
+  def username(self):
+    if self._username is None:
+      with open(self.username_path, 'r') as fp:
+        self._username = fp.read().strip()
+    return self._username
+
+  @property
+  def password(self):
+    if self._password is None:
+      with open(self.password_path, 'r') as fp:
+        self._password = fp.read().strip()
+    return self._password
+
+  def remote_command(self, hostname, command_list):
+    shell = spur.SshShell(hostname=hostname, username=self.username, password=self.password,
+        missing_host_key=spur.ssh.MissingHostKey.warn)
+    result = None
+    with shell:
+      result = shell.run(command_list, allow_error=True)
+    if result is not None:
+      if result.return_code is not 0:
+        raise self.RemoteExecutionError("Error code %d when connecting to %s: %s" % (
+            result.return_code, hostname, result.stderr_output))
+      return result.output
+    raise self.RemoteExecutionError('Did not successfully run on %s!' % hostname)
 
   def create_staging_directory(self, hostname, path):
-    pass
+    return self.remote_command(hostname, ['mkdir', '-p', path])
+
+  def update_packages(self, hostname):
+    return self.remote_command(hostname, ['apt-get', 'update'])
 
   def install_packages(self, hostname, packages):
-    pass
+    """Ensure a given sent of deb packages are installed on a host.
+
+    This will raise RemoteExecutionError to bubble up problems
+
+    :param hostname: Server to execute on
+    :type hostname: str
+    :param packages: tuple of a package name to install, followed by an optional command to execute
+    :type packages: (str, []) or (str, None)
+    """
+    for package, post_install_command in packages:
+      print('Installing %s on %s' % (package, hostname))
+      output = self.remote_command(hostname, ['apt-get', '-y', 'install', package])
+      print('Output: %s' % output)
+
+      if 'is already the newest version' not in output and post_install_command:
+        print('Modifying %s with: %s' % (hostname, post_install_command))
+        output = self.remote_command(hostname, post_install_command)
+        print('Output: %s' % output)
 
   def application_version(self, hostname):
-    pass
+    return self.remote_command(hostname, ['uname', '-a'])

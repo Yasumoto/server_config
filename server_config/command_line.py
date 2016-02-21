@@ -15,6 +15,7 @@ from server_config.dispatch import Dispatcher
 
 import click
 
+
 @click.command()
 @click.option('--role', default='', help='Servers to operate upon')
 @click.option('--action', default='status', help='Action to perform, currently `list` or `deploy`')
@@ -28,12 +29,8 @@ def main(role, action):
     print('Options are: %s' % ','.join(Dispatcher().dispatch.keys()))
     return -1
 
-  operator.preflight_check()
-
-  successful_hosts = []
-  failed_hosts = []
-
   if action == 'deploy':
+    operator.preflight_check()
     operator.deploy()
   elif action == 'status':
     host_status = operator.status()
