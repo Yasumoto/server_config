@@ -43,12 +43,12 @@ class TestWebserverOperator(unittest.TestCase):
       mock.mock_open(read_data=FAKE_HOSTLIST), create=True)
   @mock.patch('server_config.executors.webserver.WebserverExecutor.install_packages',
       autospec=True, spec_set=True)
-  @mock.patch('server_config.executors.webserver.WebserverExecutor.create_staging_directory',
+  @mock.patch('server_config.executors.webserver.WebserverExecutor.create_directory',
       autospec=True, spec_set=True)
-  def test_preflight_check(self, mock_create_staging_directory, mock_install_packages):
+  def test_preflight_check(self, mock_create_directory, mock_install_packages):
     self.operator.preflight_check()
 
-    assert_equals(mock_create_staging_directory.mock_calls, [mock.call(self.operator.executor,
+    assert_equals(mock_create_directory.mock_calls, [mock.call(self.operator.executor,
         hostname, self.operator.staging_dir) for hostname in HOSTNAMES])
     assert_equals(mock_install_packages.mock_calls, [mock.call(self.operator.executor, hostname,
         self.operator.PACKAGE_LIST) for hostname in HOSTNAMES])
@@ -67,5 +67,11 @@ class TestWebserverOperator(unittest.TestCase):
       expected_versions[hostname] = 1337
 
     assert_equals(versions, expected_versions)
-    assert_equals(mock_application_version.mock_calls, [mock.call(self.operator.executor, hostname)
-        for hostname in HOSTNAMES])
+    assert_equals(mock_application_version.mock_calls, [mock.call(self.operator.executor, hostname,
+        self.operator.SYMLINK_LOCATION) for hostname in HOSTNAMES])
+
+    def test_build_artifact(self):
+      pass
+
+    def test_deploy(self):
+      pass

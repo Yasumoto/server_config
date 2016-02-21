@@ -54,7 +54,7 @@ class WebserverExecutor(object):
       return result.output
     raise self.RemoteExecutionError('Did not successfully run on %s!' % hostname)
 
-  def create_staging_directory(self, hostname, path):
+  def create_directory(self, hostname, path):
     return self.remote_command(hostname, ['mkdir', '-p', path])
 
   def update_packages(self, hostname):
@@ -80,16 +80,26 @@ class WebserverExecutor(object):
         output = self.remote_command(hostname, post_install_command)
         print('Output: %s' % output)
 
-  def stage_artifact(hostname, local_path, artifact_version, staging_dir):
+  def stage_artifact(self, hostname, local_path, artifact_version, staging_dir):
     connection = spur.SshShell(hostname=hostname, username=self.username, password=self.password,
         missing_host_key=spur.ssh.MissingHostKey.warn)
     remote_artifact = os.path.join(staging_dir, local_path)
+    remote_resting_place = os.path.join(staging_dir, str(artifact_version))
+    print('Copying %s to %s' % (local_path, hostname))
     with connection.open(remote_artifact, 'wb') as remote_file:
       with open(local_path, 'rb') as local_file:
         shutil.copyfileobj(local_file, remote_file)
-    self.remote_command(hostname, ['unzip', '-d', os.path.join(staging_dir, artifact_version), remote_artifact])
-    #self.remote_command(hostname, ['rm', remote_artifact])
+    print('Untar-ing %s on %s' % (remote_artifact, hostname))
+    self.create_directory(hostname, remote_resting_place)
+    self.remote_command(hostname, ['/bin/tar', '-xzf', remote_artifact, '-C', remote_resting_place,
+        '--strip-components=1'])
+    self.remote_command(hostname, ['rm', remote_artifact])
 
+  def set_version(self, hostname, artifact_version, staging_dir, symlink_location):
+    remote_target = os.path.join(staging_dir, str(artifact_version))
+    self.remote_command(hostname, ['rm', '-rf', symlink_location])
+    self.remote_command(hostname, ['ln', '-s', remote_target, symlink_location])
 
-  def application_version(self, hostname):
-    return self.remote_command(hostname, ['uname', '-a'])
+  def application_version(self, hostname, symlink_location):
+    path = self.remote_command(hostname, ['readlink', symlink_location]).strip()
+    return path.split('/')[-1]

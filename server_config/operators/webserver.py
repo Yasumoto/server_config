@@ -25,6 +25,8 @@
 from contextlib import contextmanager
 import os
 import subprocess
+import time
+import urllib2
 
 from server_config.executors.webserver import WebserverExecutor
 from server_config.operator import Operator
@@ -41,6 +43,7 @@ class WebserverOperator(Operator):
   )
 
   SYMLINK_LOCATION = '/var/www/html'
+  HEALTH_CHECK = 'Hello, world!'
 
   def __init__(self):
     self._executor = None
@@ -62,17 +65,20 @@ class WebserverOperator(Operator):
       yield hostlist.read().strip().split('\n')
 
   def preflight_check(self):
+    """Run through steps required to support the application before deployment."""
     with self.hostlist() as hostnames:
       for hostname in hostnames:
-        self.executor.create_staging_directory(hostname, self.staging_dir)
+        self.executor.create_directory(hostname, self.staging_dir)
         self.executor.install_packages(hostname, self.PACKAGE_LIST)
 
   def status(self):
+    """Return the currently deployed version on each server."""
     application_versions = {}
     with self.hostlist() as hostnames:
       for hostname in hostnames:
         try:
-          application_versions[hostname] = self.executor.application_version(hostname)
+          application_versions[hostname] = self.executor.application_version(hostname,
+              self.SYMLINK_LOCATION)
         except WebserverExecutor.RemoteExecutionError as e:
           print('Error connecting to %s: %s' % (hostname, e))
         print('%s had %s' % (hostname, application_versions[hostname]))
@@ -86,15 +92,31 @@ class WebserverOperator(Operator):
     something like artifactory.
     """
     artifact_version = arrow.utcnow().timestamp
-    local_path = 'hello_world_%s.zip' % artifact_version
-    subprocess.check_call(['/usr/bin/zip', '-r', local_path, 'hello_world'])
+    local_path = 'hello_world_%s.tar.gz' % artifact_version
+    subprocess.check_call(['/usr/bin/tar', '-czf', local_path, 'hello_world'])
     return local_path, artifact_version
 
-  def deploy(self):
+  def deploy(self, clock=time):
+    """Install a new version of the hello_world web application.
+    
+    :param clock: Specified to make testing easier and more explicit
+    """
     local_path, artifact_version = self.build_artifact()
 
     with self.hostlist() as hostnames:
       for hostname in hostnames:
+        old_version = self.executor.application_version(hostname, self.SYMLINK_LOCATION)
         self.executor.stage_artifact(hostname, local_path, artifact_version, self.staging_dir)
+        self.executor.set_version(hostname, artifact_version, self.staging_dir,
+            self.SYMLINK_LOCATION)
+        clock.sleep(5)
+        page = urllib2.urlopen('http://%s' % hostname, 'r').read()
+        print('New Deploy Contents: %s' % page)
+        if self.HEALTH_CHECK not in page:
+          print('ERROR! %s did not deploy %s successfully! Rolling back to %s and halting.' % (
+              hostname, artifact_version, old_version))
+          self.executor.set_version(hostname, old_version, self.staging_dir,
+              self.SYMLINK_LOCATION)
+          return False
+        print('%s is successful!' % hostname)
         
-        #self.executor.set_correct_version(hostname, artifact_version)
