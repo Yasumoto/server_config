@@ -53,6 +53,7 @@ setup(name='server_config',
       ],
       test_suite='nose.collector',
       tests_require=[
+        'freezegun==0.3.6',
         'mock==1.3.0',
         'nose==1.3.7'
       ],

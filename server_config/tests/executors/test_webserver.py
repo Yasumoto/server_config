@@ -36,14 +36,3 @@ class TestWebserverExecutor(unittest.TestCase):
     assert_equals(MockPopen.mock_calls,
         [mock.call([self.executor.ssh_path, HOSTNAME, 'test'], stderr=-1, stdout=-1),
         mock.call().communicate()])
-
-  @mock.patch('subprocess.Popen', autospec=True, spec_set=True)
-  def test_remote_command_failure(self, MockPopen):
-    return True
-    MockPopen.side_effect = ValueError
-
-    with self.assertRaises(self.executor.CommandError):
-      self.executor.remote_command(HOSTNAME, ['test'])
-
-    assert_equals(MockPopen.mock_calls,
-        [mock.call([self.executor.ssh_path, HOSTNAME, 'test'], stderr=-1, stdout=-1)])

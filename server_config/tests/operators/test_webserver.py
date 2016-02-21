@@ -11,10 +11,13 @@
 # limitations under the License.
 #
 
+import time
 import unittest
 
 from server_config.operators.webserver import WebserverOperator
 
+import arrow
+from freezegun import freeze_time
 from nose.tools import assert_equals
 import mock
 
@@ -70,8 +73,67 @@ class TestWebserverOperator(unittest.TestCase):
     assert_equals(mock_application_version.mock_calls, [mock.call(self.operator.executor, hostname,
         self.operator.SYMLINK_LOCATION) for hostname in HOSTNAMES])
 
-    def test_build_artifact(self):
-      pass
+  @freeze_time('2016-02-20')
+  @mock.patch('subprocess.check_call', autospec=True, spec_set=True)
+  def test_build_artifact(self, mock_check_call):
+    expected_version = arrow.utcnow().timestamp
+    expected_path = self.operator.ARTIFACT_TEMPLATE % expected_version
 
-    def test_deploy(self):
-      pass
+    local_path, artifact_version = self.operator.build_artifact()
+
+    assert_equals(local_path, expected_path)
+    assert_equals(expected_version, artifact_version)
+    assert_equals(mock_check_call.mock_calls, [mock.call(['/usr/bin/tar', '-czf', expected_path,
+        'hello_world'])])
+
+  @mock.patch('server_config.operators.webserver.open',
+      mock.mock_open(read_data=FAKE_HOSTLIST), create=True)
+  @mock.patch('urllib2.urlopen', mock.mock_open(read_data='Hello, world!'), create=True)
+  @mock.patch('server_config.operators.webserver.WebserverExecutor',
+      autospec=True, spec_set=True)
+  @mock.patch('server_config.operators.webserver.WebserverOperator.build_artifact',
+      autospec=True, spec_set=True)
+  def test_deploy(self, mock_build_artifact, MockWebserverExecutor):
+    local_path = '/Users/jimmeh/test_webserver_9001.tar.gz'
+    artifact_version = '9001'
+    mock_build_artifact.return_value = local_path, artifact_version
+    clock = mock.create_autospec(time, spec_set=True)
+
+    self.operator.deploy(clock)
+
+    assert_equals(mock_build_artifact.mock_calls, [mock.call(self.operator)])
+    fake_executor_calls = [mock.call()]
+    for hostname in HOSTNAMES:
+      fake_executor_calls += [
+          mock.call().application_version(hostname, self.operator.SYMLINK_LOCATION),
+          mock.call().stage_artifact(hostname, local_path, artifact_version,
+              self.operator.staging_dir),
+          mock.call().set_version(hostname, artifact_version, self.operator.staging_dir,
+              self.operator.SYMLINK_LOCATION)]
+    assert_equals(MockWebserverExecutor.mock_calls, fake_executor_calls)
+
+  @mock.patch('server_config.operators.webserver.open',
+      mock.mock_open(read_data=FAKE_HOSTLIST), create=True)
+  @mock.patch('urllib2.urlopen', mock.mock_open(read_data='Nope'), create=True)
+  @mock.patch('server_config.operators.webserver.WebserverExecutor',
+      autospec=True, spec_set=True)
+  @mock.patch('server_config.operators.webserver.WebserverOperator.build_artifact',
+      autospec=True, spec_set=True)
+  def test_deploy_rollback(self, mock_build_artifact, MockWebserverExecutor):
+    local_path = '/Users/jimmeh/test_webserver_9001.tar.gz'
+    artifact_version = '9001'
+    mock_build_artifact.return_value = local_path, artifact_version
+    clock = mock.create_autospec(time, spec_set=True)
+    MockWebserverExecutor.return_value.application_version.return_value = '9000'
+
+    self.operator.deploy(clock)
+
+    assert_equals(mock_build_artifact.mock_calls, [mock.call(self.operator)])
+    assert_equals(MockWebserverExecutor.mock_calls, [mock.call(),
+          mock.call().application_version('hostA', self.operator.SYMLINK_LOCATION),
+          mock.call().stage_artifact('hostA', local_path, artifact_version,
+              self.operator.staging_dir),
+          mock.call().set_version('hostA', artifact_version, self.operator.staging_dir,
+              self.operator.SYMLINK_LOCATION),
+          mock.call().set_version('hostA', '9000', self.operator.staging_dir,
+              self.operator.SYMLINK_LOCATION)])
